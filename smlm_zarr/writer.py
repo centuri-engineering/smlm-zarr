@@ -26,10 +26,9 @@ def write_smlm_zarr(
     if raw_tiffs is not None:
         raw = root.create_group("raw")
         # TODO multithread this
-        for i, tiff in enumerate(raw_tiffs):
-            grp = raw.create_group(str(i))
+        for offset, tiff_stack in enumerate(raw_tiffs):
             # TODO metadata for each sub-tiff ?
-            write_raw_tiff(tiff, grp)
+            write_2d_tiff(tiff, grp)
 
     if localizations is not None:
         loc = root.create_group("loc")
@@ -40,10 +39,10 @@ def write_smlm_zarr(
     if rendered is not None:
         rdr = root.create_group("rendered")
         rdr.attrs["omero"] = get_omero_metadata(rendered_metadata)
-        write_raw_tiff(rendered, rdr)
+        write_2d_tiff(rendered, rdr)
 
 
-def write_raw_tiff(tiff, group):
+def write_2d_tiff(tiff, group):
 
     ## https://forum.image.sc/t/software-recommendations-converting-a-32bit-ome-tiff-to-an-8bit-ome-tiff/43043/15
     with tifffile.imread(tiff, aszarr=True) as in_store:

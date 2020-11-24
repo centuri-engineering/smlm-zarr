@@ -1,5 +1,5 @@
 
-# Saving STORM dataset in OME-ZARR
+# Saving Single Molecule Localization Microscopy datasets in OME-ZARR
 
 
 
