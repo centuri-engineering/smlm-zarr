@@ -10,7 +10,7 @@ OMERO_METADATA = {
             "color": "000000",
             "active": True,
             "window": {"max": 65535, "end": 65535, "start": 0, "min": 0},
-            "emissionWave": "647",
+            "emissionWave": 647,
             "label": "",
         },
     ],

@@ -1,6 +1,13 @@
-import tifffile
+"""Utility function to generate smlm looking raw images
+
+"""
+import logging
+
 import numpy as np
 from skimage.filters import gaussian
+
+
+log = logging.getLogger(__name__)
 
 
 def raw(
@@ -33,11 +40,13 @@ def raw(
 
     Returns
     -------
-    image : np.ndarray of shape `shape`
+    image : np.ndarray of shape `(shape, shape)`
        The generated image
-    locs : np.ndarray of shape (N, len(shape))
+    locs : np.ndarray of shape (N, 5)
        The praticle positions in image coordinates
        (only if return_locs is True)
+       images coordinates are 5D by default with order
+       "x", "y", "z", "c", "t"
 
 
     Note
@@ -48,9 +57,14 @@ def raw(
     prob = num_parts / (shape[1] ** 2)
     max_val = 2 ** bit_depth
     points = rng.binomial(1, prob, size=shape)
-    print("detected :", points.sum())
+    log.info("detected : %d", points.sum())
     if return_locs:
-        locs = np.array(np.nonzero(points)).T
+        coords = np.nonzero(points)
+        # xyzct
+        locs = np.zeros((coords[0].shape[0], 5), dtype="uint64")
+        for i, cc in enumerate(coords):
+            locs[:, i] = cc
+
     points *= rng.normal(max_val / 2, max_val / 10, size=shape).astype(np.int64)
     bg = rng.binomial(max_val, background / max_val, size=shape)
 
@@ -73,20 +87,23 @@ def iterable_raw(num_t, *args, **kwargs):
     See Also
     --------
     raw : gets the args and kwargs
-
     """
-    for i in range(num_t):
-        yield raw(*args, **kwargs)
+    for t in range(num_t):
+        if kwargs.get("return_locs"):
+            img, locs = raw(*args, **kwargs)
+            locs[:, -1] = t
+            yield img, locs
+        else:
+            yield raw(*args, **kwargs)
 
 
 def stacked_raw(num_t, *args, **kwargs):
     if kwargs.get("return_locs"):
         imgs = []
         locs = []
-        for i, (img, loc) in enumerate(iterable_raw(num_t, *args, **kwargs)):
+        for img, loc in iterable_raw(num_t, *args, **kwargs):
             imgs.append(img)
-            loc = np.hstack([loc, np.ones((loc.shape[0], 1)) * i])
             locs.append(loc)
 
-        return np.stack(imgs), np.concatenate(locs)
+        return np.stack(imgs), np.concatenate(locs).astype("uint64")
     return np.stack(list(iterable_raw(num_t)))
